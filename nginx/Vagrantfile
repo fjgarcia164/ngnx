@@ -1,28 +1,40 @@
 Vagrant.configure("2") do |config|
   config.vm.box = "debian/bookworm64"
-  config.vm.network "forwarded_port", guest: 80, host: 80
+  config.vm.network "private_network", ip: "192.168.120.2"
   config.vm.provision "shell", inline: <<-SHELL
+  
+  # Instalación
   apt-get update
   sudo apt install -y nginx
   sudo apt-get update
   sudo apt-get install -y vsftpd
+
+  # Autenticación
   sudo mkdir -p /var/www/fjgarcia.io/html
-  sudo cp  -r /vagrant/html/ /var/www/fjgarcia.io/
-  sudo chown -R www-data:www-data /var/www/fjgarcia.io/html
-  sudo chmod -R 755 /var/www/fjgarcia.io
-  sudo cp /vagrant/fjgarcia.io /etc/nginx/sites-available/fjgarcia.io
-  sudo systemctl reload nginx
+  sudo cp  -r /vagrant/html/* /var/www/fjgarcia.io/html/
+  sudo chown -R www-data:vagrant /var/www/
+  sudo chmod -R 775 /var/www/
+  sudo cp /vagrant/fjgarcia.io /etc/nginx/sites-available/
   sudo ln -s /etc/nginx/sites-available/fjgarcia.io /etc/nginx/sites-enabled/
   sudo systemctl restart nginx
-  sudo mkdir /home/vagrant/ftp
-  sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/vsftpd.key -out /etc/ssl/certs/vsftpd.crt
-  sudo cp /vagrant/vsftpd.conf /etc/vsftpd.conf
-  sudo systemctl restart vsftpd
+  
   sudo cp  /vagrant/.htpasswd /etc/nginx/.htpasswd
+
+  # Accesor seguro
+  sudo mkdir -p /var/www/example/html
+  sudo cp  -r /vagrant/html/* /var/www/example/html/
+  sudo chown -R www-data:vagrant /var/www/
+  sudo chmod -R 775 /var/www/
+  sudo cp /vagrant/example.com /etc/nginx/sites-available/
+  sudo ln -s /etc/nginx/sites-available/example.com /etc/nginx/sites-enabled/
+  sudo systemctl restart nginx
+
   sudo apt install ufw
   sudo ufw allow ssh
   sudo ufw allow 'Nginx Full'
   sudo ufw delete allow 'Nginx HTTP'
   sudo ufw enable
-  SHELL
+  sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/example.com.key  -out /etc/ssl/certs/example.com.crt -subj "/C=ES/ST=Andalucia/L=Granada/O=IZV/OU=WEB/CN=example.com/emailAddress=webmaster@example.com"
+
+º  SHELL
 end
